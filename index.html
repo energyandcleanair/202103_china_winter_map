@@ -1,0 +1,606 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>Cost counter</title>
+    <meta
+      name="viewport"
+      content="initial-scale=1,maximum-scale=1,user-scalable=no"
+    />
+    <script src="https://api.mapbox.com/mapbox-gl-js/v1.12.0/mapbox-gl.js"></script>
+    <script
+      src="https://cdnjs.cloudflare.com/ajax/libs/chroma-js/2.1.0/chroma.min.js"
+      integrity="sha512-yocoLferfPbcwpCMr8v/B0AB4SWpJlouBwgE0D3ZHaiP1nuu5djZclFEIj9znuqghaZ3tdCMRrreLoM8km+jIQ=="
+      crossorigin="anonymous"
+    ></script>
+    <script src='https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js'></script>
+
+
+    <link
+      href="https://api.mapbox.com/mapbox-gl-js/v1.12.0/mapbox-gl.css"
+      rel="stylesheet"
+    />
+  </head>
+  <body>
+    <style>
+      body {
+        margin: 0;
+        padding: 0;
+      }
+      #map {
+        position: absolute;
+        top: 0;
+        bottom: 0;
+        width: 100%;
+      }
+
+      body {
+        overflow: hidden;
+      }
+
+      body * {
+        -webkit-touch-callout: none;
+        -webkit-user-select: none;
+        -moz-user-select: none;
+        -ms-user-select: none;
+        user-select: none;
+      }
+
+      .map {
+        position: absolute;
+        top: 0;
+        bottom: 0;
+        width: 100%;
+      }
+
+      .title {
+        background-color: #ffffffa0;
+        border-radius: 3px;
+        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+        font: 12px/20px "Helvetica Neue", Arial, Helvetica, sans-serif;
+        padding: 10px;
+        position: absolute;
+        z-index: 1;
+      }
+
+      .title-before {
+        top: 30px;
+        left: 10px;
+      }
+
+      .title h2 {
+        color: "black";
+        margin: 0;
+      }
+
+      .legend {
+        position: absolute;
+        top: 30px;
+        right: 10px;
+      }
+
+      .legend-box {
+        background-color: #fff;
+        border-radius: 3px;
+        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+        font: 12px/20px "Helvetica Neue", Arial, Helvetica, sans-serif;
+        padding: 10px;
+        margin-top: 10px;
+        z-index: 1;
+      }
+
+      .legend-box h4 {
+        margin: 0 0 10px;
+      }
+
+      .legend-box div span {
+        border-radius: 50%;
+        display: inline-block;
+        height: 10px;
+        margin-right: 5px;
+        width: 10px;
+      }
+
+      #menu {
+        width: 100%;
+        background: #fff;
+        z-index: 1;
+        /* top: 10px; */
+        /* right: 10px; */
+        border-radius: 3px;
+        /* width: 120px; */
+        /* border: 1px solid rgba(0, 0, 0, 0.4); */
+        font-family: "Open Sans", sans-serif;
+      }
+
+      #menu a {
+        font-size: 12px;
+        color: #404040;
+        display: block;
+        margin: 0;
+        padding: 0;
+        padding: 10px;
+        text-decoration: none;
+        /* border-bottom: 1px solid rgba(0, 0, 0, 0.25); */
+        text-align: center;
+      }
+
+      #menu a:last-child {
+        border: none;
+      }
+
+      #menu a:hover {
+        background-color: #f8f8f8;
+        color: #404040;
+      }
+
+      #menu a.active {
+        background-color: #3887be;
+        color: #ffffff;
+      }
+
+      #menu a.active:hover {
+        background: #3074a4;
+      }
+
+      .mapboxgl-popup-content {
+        width: 380px;
+      }
+
+      .popup th {
+        text-align: left;
+      }
+
+      .popup h4 {
+        margin: 0;
+        font-size: 16px;
+      }
+
+      .popup span {
+        display: block;
+      }
+
+      .popup .value {
+        font-weight: 500;
+      }
+      .popup .yoy-red {
+        color: red;
+        font-weight: 500;
+      }
+
+      .popup .yoy-green {
+        color: green;
+        font-weight: 500;
+      }
+
+      .popup h5 {
+        margin: 10px 0 0 0;
+      }
+
+      /* Boundaries tooltip */
+      .tooltip {
+        position: relative;
+        display: inline-block;
+        /* border-bottom: 1px dotted black; If you want dots under the hoverable text */
+      }
+      .tooltip .tooltiptext {
+        visibility: hidden;
+        width: 280px;
+        background-color: #555;
+        color: #fff;
+        text-align: center;
+        padding: 5px;
+        border-radius: 6px;
+
+        /* Position the tooltip text */
+        position: absolute;
+        z-index: 1;
+        bottom: 125%;
+        right: 30%;
+        margin-right: -80px;
+
+        /* Fade in tooltip */
+        opacity: 0;
+        transition: opacity 0.3s;
+      }
+      .tooltip .tooltiptext::after {
+        content: "";
+        position: absolute;
+        top: 100%;
+        left: 50%;
+        margin-left: -5px;
+        border-width: 5px;
+        border-style: solid;
+        border-color: #555 transparent transparent transparent;
+      }
+      .tooltip:hover .tooltiptext {
+        visibility: visible;
+        opacity: 1;
+      }
+
+      /* Logos and intro */
+      .logos-box {
+        background-color: transparent;
+        /*border-radius: 3px;*/
+        /*box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);*/
+        font: 12px/20px "Helvetica Neue", Arial, Helvetica, sans-serif;
+        padding: 10px;
+        margin-top: 10px;
+        position: absolute;
+        top: 30px;
+        left: 10px;
+        width: 260px;
+      }
+      .logos-box .intro {
+        margin-bottom: 10px;
+        align: left;
+      }
+      .logos {
+        display: flex;
+      }
+      .logos a {
+        padding: 5px;
+      }
+
+      .circle {
+        height: 15px !important;
+        width: 15px !important;
+        background-color: transparent;
+        border-radius: 50%;
+        display: inline-block;
+        border: 2px solid;
+        margin-bottom: 5px;
+        margin-top: 5px;
+        vertical-align: middle;
+      }
+
+      .color-coal {
+        border-color: #2d2a3e;
+      }
+
+      .color-oilgas {
+        border-color: blue;
+      }
+
+      .color-smelter {
+        border-color: #f93445;
+      }
+
+      .color-volcano {
+        border-color: #5b9279;
+      }
+    </style>
+    <script src="https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-compare/v0.4.0/mapbox-gl-compare.js"></script>
+    <link
+      rel="stylesheet"
+      href="https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-compare/v0.4.0/mapbox-gl-compare.css"
+      type="text/css"
+    />
+    <div id="comparison-container">
+      <div id="map" class="map"></div>
+    </div>
+   <!--  <div id="title-before" class="title title-before">
+      <h2>China Winter 2020-2021</h2>
+    </div> -->
+    <div class="legend">
+      <nav id="menu"></nav>
+      <div id="legend" class="legend-box">
+        <h4>Select a city</h4>
+        <select id="layer-select" name="layer" onchange="locationChanged(this.value)">
+            <option value="beijing">Beijing</option>
+            <option value="shanghai">Shanghai</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="logos-box">
+     <!--  <div class="intro">
+        This map is part of the
+        <a href="">China Winter 2020-2021 Brief</a>by CREA.
+      </div> -->
+      <div class="logos">
+        <a href="https://energyandcleanair.org">
+          <img
+            src="https://energyandcleanair.org/wp/wp-content/uploads/2020/01/CREA-logo.svg"
+            height="40px"
+        /></a>
+      </div>
+    </div>
+
+    <script>
+
+      //*********************
+      // Display parameters
+      //*********************
+
+      // Cost as % of GDP
+      var min = 0;
+      var max = 0.07;
+      var pow = 1;
+      var scale = chroma
+        .scale([
+          "#fcfdbf",
+          "#f8d68b",
+          "#efa961",
+          "#ce6170",
+          "#812581",
+          "#000004",
+        ])
+        .domain([0, 0.01, 0.02, 0.03, 0.06, 0.07]);
+
+      // var scale_element = document.getElementById("legend");
+      // [0, 0.01, 0.02, 0.03, 0.04, 0.05, 0.06, 0.07].forEach(function (i) {
+      //   scale_element.innerHTML +=
+      //     '<div><span style="background-color:' +
+      //     scale(Math.pow(i, pow)).hex() +
+      //     '"></span>' +
+      //     Math.round(i*100) + "%" +
+      //     "</div>";
+      // });
+
+      // Adding elements
+      // var boundaries_name = "hotspots-dots";
+      // var boundaries_source = {
+      //   type: "vector",
+      //   url: "mapbox://mapbox.country-boundaries-v1",
+      // };
+
+      // var cost_data = JSON.parse(data)
+
+    
+      mapboxgl.accessToken =
+        "pk.eyJ1IjoiaHViZXJ0LXRoaWVyaW90IiwiYSI6ImNrZWpydm1yZjFhYWwydXFiNXp2YzVhaXcifQ.j61s7IWe1FpvaEr2fHQQbA";
+
+      var map = new mapboxgl.Map({
+        container: "map",
+        style: "mapbox://styles/mapbox/light-v10",
+        center: [110, 40],
+        zoom: 5,
+        attributionControl: false,
+      });
+
+      map.on('load', function () {
+ 
+        // Add source for country polygons using the Mapbox Countries tileset
+        // The polygons contain an ISO 3166 alpha-3 code which can be used to for joining the data
+        // https://docs.mapbox.com/vector-tiles/reference/mapbox-countries-v1
+        map.addSource('countries', {
+          type: 'vector',
+          url: 'mapbox://mapbox.country-boundaries-v1'
+        });
+         
+        // Build a GL match expression that defines the color for every vector tile feature
+        // Use the ISO 3166-1 alpha 3 code as the lookup key for the country shape
+        // var matchExpression = ['match', ['get', 'iso_3166_1_alpha_3']];
+         
+        // // Calculate color values for each country based on 'hdi' value
+        // cost_data.forEach(function (row) {
+         
+        //   // Convert the range of data values to a suitable color
+        //   // var green = row['color'] * 100 * 255;
+        //   // var color = 'rgb(0, '+ green + ', 0)';
+        //   var color = scale(Math.pow(row['color'], pow)).hex()
+           
+        //   matchExpression.push(row['ISO3'], color);
+           
+        // });
+           
+        //   // Last value is the default, used where there is no data
+        // matchExpression.push('rgba(0, 0, 0, 0)');
+         
+        // Add layer from the vector tile source to create the choropleth
+        // Insert it below the 'admin-1-boundary-bg' layer in the style
+        // map.addLayer({
+        // 'id': 'countries-join',
+        // 'type': 'fill',
+        // 'source': 'countries',
+        // 'source-layer': 'country_boundaries',
+        // 'paint': {
+        // 'fill-color': matchExpression
+        // }
+        // }, 'admin-1-boundary-bg');
+         
+      });
+
+
+
+      //usage:
+
+      
+      
+      
+      // Init
+      function locationChanged(location_name){
+
+        const layer_id = "layer_trajectories"
+        const source_id = `source_${location_name}`
+
+        // Check layer exists for first time
+        const layers = map.getStyle().layers
+        const layer_exists = (layers.findIndex(l => l.id === layer_id) != -1)
+
+        let location = locations.find(l => l.location_name.toLowerCase() === location_name.toLowerCase())
+
+        // Check source exists to prevent reloading file
+        let source = map.getSource(source_id)
+        console.log(source)
+        
+        if(!source){
+          source = map.addSource(source_id, {
+            type: 'geojson',
+            data: `https://raw.githubusercontent.com/energyandcleanair/202103_china_winter_map/master/data/trajectories/trajs_${location_name}.geojson`
+          });
+        }
+        
+        if(layer_exists){
+          map.removeLayer(layer_id)
+        }
+        
+        var layer = map.addLayer({
+          'id': layer_id,
+          'type': 'line',
+          'source': `source_${location_name}`,
+          'layout': {
+          'line-join': 'round',
+          'line-cap': 'round'
+          },
+          'paint': {
+          'line-color': 'darkred',
+          'line-width': 4,
+          'line-opacity': 0.5
+          }
+        });
+
+        map.flyTo({center:[location.lon, location.lat]});
+
+
+        // map.on("sourcedata", function(e) {
+        //     if (map.getSource(source_id) && map.isSourceLoaded(source_id)) {
+        //         console.log('source loaded!');
+        //         var features = map.querySourceFeatures(source_id);
+        //         console.log(features);
+        //         // console.log(layer.getBounds())
+        //         // var bounds = new mapboxgl.LngLatBounds();
+        //         // var bbox = turf.extent(features);
+        //         // console.log(bbox)
+
+
+        //         // features.forEach(function(feature) {
+        //         //   console.log(feature.geometry.coordinates)
+        //         //   var feature_bounds = feature.geometry.coordinates.reduce(function (bounds, coord) {
+        //         //     return bounds.extend(coord);
+        //         //     }, new mapboxgl.LngLatBounds(feature.geometry.coordinates[0], feature.geometry.coordinates[0]));
+        //         //   console.log(feature_bounds)
+        //         // });
+
+                
+
+        //         // console.log(bounds)
+
+        //         // map.fitBounds(bounds);
+        //     }
+        // });
+
+      }
+
+
+
+
+      function addDisclaimer(map_) {
+        map_.addControl(
+          new mapboxgl.AttributionControl({
+            compact: false,
+            customAttribution:
+              "<div class='tooltip'>Boundaries on this map reflect the data source used (Mapbox Boundaries)" +
+              "<span class='tooltiptext'>CREA is politically independent and do not take sides in territorial disputes." +
+              " The presentation of political borders contained in this map do not imply the expression of any opinion whatsoever concerning" +
+              " the legal status of any country, territory, city or area or of its authorities, or concerning the delimitation of its frontiers or boundaries.</span></div>",
+          })
+        );
+      }
+
+      addDisclaimer(map);
+
+      // Popup
+      // Create a popup, but don't add it to the map yet.
+      var popup = new mapboxgl.Popup({
+        closeButton: false,
+        closeOnClick: false,
+      });
+
+      function addPopup(map_) {
+        map_.on("mousemove", "layer_trajectories", function (e) {
+          map_.getCanvas().style.cursor = "pointer";
+          var props = e.features[0].properties;
+          console.log(props)
+          // var iso3 = props.iso_3166_1_alpha_3;
+          // console.log(iso3)
+          // Find attached props
+          // var p = cost_data.find(e => e.ISO3==iso3)
+          // console.log(p)
+          // console.log(p["asthma emergency room visits"])
+          
+          var legend = `<div class="popup"><h4>${p.country}</h4>
+            <table style="width:100%">
+              <tr>
+                <th>Indicator</th>
+                <th>Unit</th>
+                <th>Value</th>
+              </tr>
+              <tr>
+                <td>Cost</td>
+                <td>% of GDP</td>
+                <td>${p["cost, % of GDP"]}</td>
+              </tr>
+              <tr>
+                <td>Cost</td>
+                <td>USD/person/year</td>
+                <td>${p["cost, USD/person/year"]}</td>
+              </tr>
+              <tr>
+                <td>Asthma emergency<br>room visits</td>
+                <td>-</td>
+                <td> ${p["asthma emergency room visits"]}</td>
+              </tr>
+              <tr>
+                <td>New cases of child asthma</td>
+                <td>person</td>
+                <td>${p["new cases of child asthma"]}</td>
+              </tr>
+              <tr>
+                <td>Preterm births</td>
+                <td>person</td>
+                <td>${p["preterm births"]}</td>
+              </tr>
+              <tr>
+                <td>Work absence</td>
+                <td>days</td>
+                <td>${p["work absence (days)"]}</td>
+              </tr>
+              <tr>
+                <td>Deaths</td>
+                <td>person</td>
+                <td>${p["deaths"]}</td>
+              </tr>
+            </table>
+          </div>`;
+        
+          popup.setLngLat(e.lngLat).setHTML(legend).addTo(map_);
+        });
+
+        map_.on("mouseleave", "layer_trajectories", function () {
+          map_.getCanvas().style.cursor = "";
+          popup.remove();
+        });
+      }
+
+      let dropdown = $('#layer-select');
+      dropdown.empty();
+      // dropdown.append('<option selected="true" disabled>Choose State/Province</option>');
+      // dropdown.prop('selectedIndex', 0);
+
+      const url = 'https://raw.githubusercontent.com/energyandcleanair/202103_china_winter_map/master/data/locations.json';
+      var locations = [];
+      // Populate dropdown with list of provinces
+      $.getJSON(url, function (data) {
+        locations = data
+        $.each(data, function (key, entry) {
+          dropdown.append($('<option></option>')
+            .attr('value', entry.location_name.toLowerCase())
+            .attr('lat', entry.lat)
+            .attr('lon', entry.lon)
+            .text(entry.location_name));
+        })
+      });
+
+      // addPopup(map)
+      map.on('load', () => {
+        locationChanged("beijing")
+      })
+
+
+
+
+    </script>
+  </body>
+</html>
