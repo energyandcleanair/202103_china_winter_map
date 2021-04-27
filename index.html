@@ -398,6 +398,22 @@
         // 'fill-color': matchExpression
         // }
         // }, 'admin-1-boundary-bg');
+
+         map.addSource("source_no2", {
+            "type": "raster",
+            "url": "mapbox://hubert-thieriot.3x0jcqzc",
+            "tileSize": 256
+         });
+         map.addLayer({
+          'id': 'layer_no2',
+          'type': 'raster',
+          'source': 'source_no2',
+          'source-layer': 'chinaNO22020_10km_8bit_render-8fjv15',
+          'paint': {
+            'raster-opacity': 0.5
+          }
+        });
+
          
       });
 
