@@ -404,18 +404,66 @@
             "url": "mapbox://hubert-thieriot.3x0jcqzc",
             "tileSize": 256
          });
+
          map.addLayer({
-          'id': 'layer_no2',
+          'id': 'layer-no2',
           'type': 'raster',
           'source': 'source_no2',
           'source-layer': 'chinaNO22020_10km_8bit_render-8fjv15',
           'paint': {
             'raster-opacity': 0.5
-          }
+          },
+          layout: {
+            visibility: "visible",
+          } 
         });
-
          
       });
+
+
+      var toggleableLayerIds = [
+        {
+          id: "layer-no2",
+          name: "NO2 Column Amount (2020)",
+          visibility: "visible",
+        }
+      ];
+
+      // set up the corresponding toggle button for each layer
+      for (var i = 0; i < toggleableLayerIds.length; i++) {
+        var id = toggleableLayerIds[i].id;
+        var name = toggleableLayerIds[i].name;
+        var visibility = toggleableLayerIds[i].visibility;
+
+        var link = document.createElement("a");
+        link.href = "#";
+        link.className = visibility == "visible" ? "active" : "";
+        link.textContent = name;
+        link.id = id;
+
+        link.onclick = function (e) {
+          var clickedLayer = this.id;
+          e.preventDefault();
+          e.stopPropagation();
+
+          var visibility = map.getLayoutProperty(
+            clickedLayer,
+            "visibility"
+          );
+
+          // toggle layer visibility by changing the layout object's visibility property
+          if (visibility === "visible") {
+            map.setLayoutProperty(clickedLayer, "visibility", "none");
+            this.className = "";
+          } else {
+            this.className = "active";
+            map.setLayoutProperty(clickedLayer, "visibility", "visible");
+          }
+        };
+
+        var layers = document.getElementById("menu");
+        layers.appendChild(link);
+      }
 
 
 
